@@ -37,9 +37,9 @@ int main(void)
   printf("float: %f\n",f);
   printf("decimal: %d",d);
   printf("print string:\n");
-  int j = scanfMine("%s",str2);
-  printf("number = %d\n",j);
-  printf("str2: %s\n",str2);
+  //int j = scanfMine("%s",str2);
+  //printf("number = %d\n",j);
+  //printf("str2: %s\n",str2);
   //printf("decimal %d\n", d1);
   //printf("fact %f\n",f1);
   return 0;
@@ -56,12 +56,18 @@ int scanfMine(const char *format,...)
   
   while (*format != '\0'){
     if (*format != '%'){
+      if(isspace(*format)){
+	while (isspace(c = getchar()));
+	format++;
+	continue;
+      }else{
       c = getchar();
       if (c != *format){
 	break;
       }
       format++;
       continue;
+      }
     }
     format++;
      // Check for modifier
@@ -84,7 +90,7 @@ int scanfMine(const char *format,...)
     switch(*format){
     case 'c':{
       char *w = va_arg(pointer, char *);
-      while(isspace(c= getchar()));
+      //while(isspace(c= getchar()));
       *w = c;
       counted ++;
       break;
@@ -92,9 +98,10 @@ int scanfMine(const char *format,...)
     case 's':{
       char *w = va_arg(pointer, char*);
       while (isspace(c = getchar())); 
-      *w++ = c;
-      while (((c = getchar()) != EOF) && (!isspace(c))){
+      //*w++ = c;
+      while ((c != EOF) && (!isspace(c))){
 	*w++ = c;
+	c = getchar();
       }
       *w = '\0';
       counted++;
@@ -111,6 +118,8 @@ int scanfMine(const char *format,...)
 	  else val += tolower(c) - 'a'+10;
 	  c = getchar();
 	}
+      
+      if (!isxdigit(c) && c != EOF) ungetc(c, stdin);
       *n = val;
       counted++;
       break;
@@ -127,6 +136,8 @@ int scanfMine(const char *format,...)
 	val = val*10 + (c - '0');
 	c = getchar();
       }
+      
+      if (!isdigit(c) && c != EOF) ungetc(c, stdin);
       val *= pos;
 
       switch (mod) {
