@@ -21,6 +21,7 @@ int test_string(void);
 int test_decimal(void);
 int test_float(void);
 int test_combo(void);
+int test_dec_mod(void);
 
 
 int main(void){
@@ -29,7 +30,8 @@ int main(void){
     //test_string();
     //test_decimal();
     //test_float();
-    test_combo();
+    //test_combo();
+    test_dec_mod();
     return 0;
 }
 
@@ -68,8 +70,7 @@ int main(void)
 }
 */
 
-int scanfMine(const char *format,...)
-{
+int scanfMine(const char *format,...) {
   va_list pointer;
   va_start(pointer, format);
   
@@ -94,8 +95,8 @@ int scanfMine(const char *format,...)
       }
     }
     format++;
-    /*
-     // Check for modifier
+    
+     // Check for modifier - can have at most one modifier
     enum {NONE, HH, H, L, LL, J, Z, T, CAPITAL_L} mod = NONE;
     if (*format == 'h') {
       if (*(format + 1) == 'h') { mod = HH; format += 2; }
@@ -109,7 +110,7 @@ int scanfMine(const char *format,...)
     else if (*format == 'z') { mod = Z; format++; }
     else if (*format == 't') { mod = T; format++; }
     else if (*format == 'L') { mod = CAPITAL_L; format++; }
-    */
+    
 
     //skip leading whitespace for all
     switch(*format){
@@ -138,6 +139,14 @@ int scanfMine(const char *format,...)
       //might be a prob if more than one char
       unsigned int *n = va_arg(pointer, unsigned int *);
       while (isspace(c = getchar()));
+      if (c = '0'){
+        int c = getchar();
+        if (c == 'x' || c == 'X'){
+          c = getchar();
+        }else{
+          //unget the char after 0 -> c is is 0 which is valid hex digit
+          ungetc(c, stdin);
+      }
       unsigned int val = 0;
       while (isxdigit(c)){
 	  val *= 16;
@@ -147,6 +156,23 @@ int scanfMine(const char *format,...)
       }
       if (!isxdigit(c) && c != EOF) ungetc(c, stdin);
       *n = val;
+       switch (mod) {
+        case HH:
+            *va_arg(pointer, signed char *) = (signed char)val;
+            break;
+        case H:
+            *va_arg(pointer, short *) = (short)val;
+            break;
+        case L:
+            *va_arg(pointer, long *) = (long)val;
+            break;
+        case LL:
+            *va_arg(pointer, long long *) = val;
+            break;
+        default:
+            *va_arg(pointer, int *) = (int)val;
+            break;
+    }
       counted++;
       break;
     }
@@ -192,18 +218,19 @@ int scanfMine(const char *format,...)
       
       if (!isdigit(c) && c != EOF) ungetc(c, stdin);
       val *= pos;
+      */
 
       switch (mod) {
-      case HH:  *va_arg(pointer, signed char *) = (signed char)val; break;
-      case H:   *va_arg(pointer, short *) = (short)val; break;
-      case L:   *va_arg(pointer, long *) = (long)val; break;
-      case LL:  *va_arg(pointer, long long *) = (long long)val; break;
-      case J:   *va_arg(pointer, intmax_t *) = val; break;
-      case Z:   *va_arg(pointer, size_t *) = (size_t)val; break;
-      case T:   *va_arg(pointer, ptrdiff_t *) = (ptrdiff_t)val; break;
-      default:  *va_arg(pointer, int *) = (int)val; break;
+      case HH:  *va_arg(pointer, signed char *) = (signed char)v; break;
+      case H:   *va_arg(pointer, short *) = (short)v; break;
+      case L:   *va_arg(pointer, long *) = (long)v; break;
+      case LL:  *va_arg(pointer, long long *) = (long long)v; break;
+      case J:   *va_arg(pointer, intmax_t *) = v; break;
+      case Z:   *va_arg(pointer, size_t *) = (size_t)v; break;
+      case T:   *va_arg(pointer, ptrdiff_t *) = (ptrdiff_t)v; break;
+      default:  *va_arg(pointer, int *) = (int)v; break;
       }
-      */
+      
       if (c != EOF) ungetc(c, stdin);
       counted++;
       break;
@@ -246,7 +273,7 @@ int scanfMine(const char *format,...)
       }
 
       *n = neg ? -v : v;
-      
+    }
 
       /*
       //after this includes modifiers
@@ -361,6 +388,7 @@ int scanfMine(const char *format,...)
 
 
 
+
 #define ASSERT(cond,msg) \
     if (!(cond)) { printf("FAIL: %s\n", msg); return 1; }
 
@@ -455,6 +483,35 @@ int test_vector(void) {
     return n;
 }
 
+int test_dec_mod(void) {
+  printf("Testing %%d with modifiers...\n");
+  signed char sc;
+  short sh;
+  int i;
+  long l;
+  long long ll;
+  int n;
+  printf("print 127\n");
+  n = scanfMine("%hhd", &sc); // input: "127"
+  ASSERT(n == 1 && sc == 127, "signed char %hhd");
+  printf("print -32000\n");
+  n = scanfMine("%hd", &sh); // input: "-32000"
+  ASSERT(n == 1 && sh == -32000, "short %hd");
+  printf("print 12345\n");
+  n = scanfMine("%d", &i); // input: "12345"
+  ASSERT(n == 1 && i == 12345, "int %d");
+  //printf("print 123456789\n");
+  //n = scanfMine("%ld", &l); // input: "123456789"
+  //ASSERT(n == 1 && l == 123456789, "long %ld");
+  printf("print -9876543210\n");
+  n = scanfMine("%lld", &ll); // input: "-9876543210"
+  ASSERT(n == 1 && ll == -9876543210LL, "long long %lld");
+  printf("PASS: %%d modifiers\n");
+  return 1;
+}
+
+
+//why suddenly problems it worked yesterday???
 int test_combo(void) {
     printf("print a 5B 6.8 67 hello 67%% 1.0 2.5 3.9\n");
     char c;
