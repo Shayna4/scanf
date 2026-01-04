@@ -10,70 +10,9 @@
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
-#include "scanf_mine.c"
-//#include "test_scanfmine.c"
-
-
-int scanfMine(const char *format,...);
-int test_char(void);
-int test_hex(void);
-int test_string(void);
-int test_decimal(void);
-int test_float(void);
-int test_combo(void);
-int test_dec_mod(void);
-int test_vector(void);
-int test_percent(void);
-
-
-int main(void){
-    test_char();
-    test_hex();
-    test_string();
-    test_decimal();
-    test_float();
-    test_percent();
-    test_vector();
-    test_combo();
-    //test_dec_mod();
-    return 0;
-}
 
 
 
-/*
-int main(void)
-{
-  char c;
-  unsigned int x;
-  char str[100];
-  char str2[100];
-  float f;
-  float f1;
-  int d;
-  int d1;
-  printf("print char, hex, string, float, decimal:\n");
-  int n = scanfMine("%c %x %f %d %s",&c,&x, &f, &d,str);
-  //printf("f");
-  //scanfMine("%f",&f1);
-  //printf("d");
-  //scanfMine("%d",&d1);
-  printf("number = %d\n",n);
-  printf("your char is %c\n",c);
-  printf("hex: %x\n",x);
-  printf("str: %s\n",str);
-  printf("float: %f\n",f);
-  printf("decimal: %d",d);
-  printf("print string:\n");
-  //int j = scanfMine("%s",str2);
-  //printf("number = %d\n",j);
-  //printf("str2: %s\n",str2);
-  //printf("decimal %d\n", d1);
-  //printf("fact %f\n",f1);
-  return 0;
-}
-*/
-/*
 int scanfMine(const char *format,...) {
   va_list pointer;
   va_start(pointer, format);
@@ -143,14 +82,14 @@ int scanfMine(const char *format,...) {
       //might be a prob if more than one char
       unsigned int *n = va_arg(pointer, unsigned int *);
       while (isspace(c = getchar()));
-      if (c = '0'){
-        int c = getchar();
+      if (c == '0'){
+        int c = getchar(); 
         if (c == 'x' || c == 'X'){
           c = getchar();
         }else{
           //unget the char after 0 -> c is is 0 which is valid hex digit
           ungetc(c, stdin);
-      }
+      }}
       unsigned int val = 0;
       while (isxdigit(c)){
 	  val *= 16;
@@ -254,13 +193,13 @@ int scanfMine(const char *format,...) {
       }
 
       *n = neg ? -v : v;
-    }
+    
 
       switch (mod) {
-          case NONE: *va_arg(pointer, float *) = (float)val; break;
-          case L:    *va_arg(pointer, double *) = (double)val; break;
-          case CAPITAL_L: *va_arg(pointer, long double *) = val; break;
-          default: *va_arg(pointer, float *) = (float)val; break;
+          case NONE: *va_arg(pointer, float *) = (float)v; break;
+          case L:    *va_arg(pointer, double *) = (double)v; break;
+          case CAPITAL_L: *va_arg(pointer, long double *) = v; break;
+          default: *va_arg(pointer, float *) = (float)v; break;
       }
       if (c != EOF) ungetc(c, stdin);
       counted++;
@@ -341,168 +280,3 @@ int scanfMine(const char *format,...) {
   va_end(pointer);
   return counted;
 }
-
-
-*/
-
-
-#define ASSERT(cond,msg) \
-    if (!(cond)) { printf("FAIL: %s\n", msg); return 1; }
-
-
-int test_char(void) {
-    printf("print A\n");
-    char c;
-    int n = scanfMine(" %c", &c);
-    ASSERT(n == 1, "char return count");
-    ASSERT(c == 'A', "char");
-    printf("PASS: char\n");
-    return n;
-}
-int test_hex(void) {
-    printf("print 5A\n");
-    unsigned int x;
-    int n = scanfMine("%x", &x);
-
-    ASSERT(n == 1, "hex return count");
-    ASSERT(x == 0x5A, "hex value");
-    printf("PASS: hex\n");
-
-    return n;
-}
-int test_string(void) {
-    printf("print Hello\n");
-    char str[100];
-    int n = scanfMine("%s", str);
-
-    ASSERT(n == 1, "string return count");
-    ASSERT(strcmp(str, "Hello") == 0, "string value");
-    printf("PASS: string\n");
-
-    return n;
-}
-int test_decimal(void) {
-    printf("print 67\n");
-    int d = 67;
-    int n = scanfMine("%d", &d);
-    printf("n=%d\n", n);
-    printf("d=%d\n", d);
-
-    ASSERT(n == 1, "decimal return count");
-    ASSERT(d == 67, "decimal value");
-    printf("PASS: decimal\n");
-
-    return n;
-}
-int test_float(void) {
-    printf("print 3.14\n");
-    float f;
-    int n = scanfMine("%f", &f);
-    printf("n=%d\n", n);
-    printf("f=%f\n", f);
-
-    ASSERT(n == 1, "float return count");
-    ASSERT(fabs(f - 3.14f) < 0.0001f, "float value");
-    printf("PASS: float\n");
-
-    return n;
-}
-
-int test_percent(void) {
-    printf("print 75%%\n");
-    float f;
-    int n = scanfMine("%p", &f);
-    printf("n=%d\n", n);
-    printf("f=%f\n", f);
-
-    ASSERT(n == 1, "probability return count");
-    ASSERT(fabs(f - 0.75f) < 0.0001f, "probability value");
-    printf("PASS: probability\n");
-
-    return n;
-}
-
-int test_vector(void) {
-    printf("print 1.0 2.0 3.0\n");
-    float arr[3];
-    int n = scanfMine("%v", arr, 3);
-    printf("n=%d\n", n);
-    printf("arr[0]=%f\n", arr[0]);
-    printf("arr[1]=%f\n", arr[1]);
-    printf("arr[2]=%f\n", arr[2]);
-
-    ASSERT(n == 1, "vector return count");
-    ASSERT(fabs(arr[0] - 1.0f) < 0.0001f, "vector element 0");
-    ASSERT(fabs(arr[1] - 2.0f) < 0.0001f, "vector element 1");
-    ASSERT(fabs(arr[2] - 3.0f) < 0.0001f, "vector element 2");
-    printf("PASS: vector\n");
-
-    return n;
-}
-
-int test_dec_mod(void) {
-  printf("Testing %%d with modifiers...\n");
-  signed char sc;
-  short sh;
-  int i;
-  long l;
-  long long ll;
-  int n;
-  printf("print 127\n");
-  n = scanfMine("%hhd", &sc); // input: "127"
-  ASSERT(n == 1 && sc == 127, "signed char %hhd");
-  printf("print -32000\n");
-  n = scanfMine("%hd", &sh); // input: "-32000"
-  ASSERT(n == 1 && sh == -32000, "short %hd");
-  printf("print 12345\n");
-  n = scanfMine("%d", &i); // input: "12345"
-  ASSERT(n == 1 && i == 12345, "int %d");
-  printf("print 123456789\n");
-  n = scanfMine("%ld", &l); // input: "123456789"
-  ASSERT(n == 1 && l == 123456789, "long %ld");
-  printf("print -9876543210\n");
-  n = scanfMine("%lld", &ll); // input: "-9876543210"
-  ASSERT(n == 1 && ll == -9876543210LL, "long long %lld");
-  printf("PASS: %%d modifiers\n");
-  return 1;
-}
-
-
-//why suddenly problems it worked yesterday???
-int test_combo(void) {
-    printf("print a 5B 6.8 67 hello 67%% 1.0 2.5 3.9\n");
-    char c;
-    unsigned int x;
-    float f;
-    int d;
-    char s[100];
-    float prob;
-    float arr[3];
-
-    int n = scanfMine(" %c %x %f %d %s %p %v", &c, &x, &f, &d, s, &prob, arr, 3);
-    printf("n=%d\n", n);
-    printf("c=%c\n", c);
-    printf("x=%x\n", x);
-    printf("f=%f\n", f);
-    printf("d=%d\n", d);
-    printf("s=%s\n", s);  
-    printf("prob=%f\n", prob);
-    printf("arr[0]=%f\n", arr[0]);
-    printf("arr[1]=%f\n", arr[1]);
-    printf("arr[2]=%f\n", arr[2]);
-
-    ASSERT(n == 7, "combo return count");
-    ASSERT(c == 'a', "combo char");
-    ASSERT(x == 0x5B, "combo hex");
-    ASSERT(fabs(f - 6.8f) < 0.0001f, "combo float");
-    ASSERT(d == 67, "combo decimal");
-    ASSERT(strcmp(s, "hello") == 0, "combo string");
-    ASSERT(fabs(prob - 0.67f) < 0.0001f, "combo probability");
-    ASSERT(fabs(arr[0] - 1.0f) < 0.0001f, "combo vector element 0");
-    ASSERT(fabs(arr[1] - 2.5f) < 0.0001f, "combo vector element 1");
-    ASSERT(fabs(arr[2] - 3.0f) < 0.0001f, "combo vector element 2");
-    printf("PASS: combo\n");  
-
-    return n;
-}
-
