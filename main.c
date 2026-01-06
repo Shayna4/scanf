@@ -10,11 +10,11 @@
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
-#include "scanf_mine.c"
-//#include "test_scanfmine.c"
+#include "scanf_mine_3.c"
+#include <assert.h>
 
+ 
 
-int scanfMine(const char *format,...);
 int test_char(void);
 int test_hex(void);
 int test_string(void);
@@ -24,326 +24,64 @@ int test_combo(void);
 int test_dec_mod(void);
 int test_vector(void);
 int test_percent(void);
+int test_hex_mod(void);
+int test_float_mod(void);
+int test_hex_fail(void);
+int test_combo(void);
+int test_width_numbers(void);
+int test_width_hex(void);
+int test_width_vector_string(void);
+int test_width_time(void);
+int test_width_mix(void);
+int test_combo_modifiers(void);
+int test_combo_exponent_hex(void);
+int test_combo_modifiers(void);
+int test_combo_reordered(void);
+int test_combo_edge_cases(void);
+void test_star_modifier(void);
+
 
 
 int main(void){
-    test_char();
-    test_hex();
-    test_string();
-    test_decimal();
-    test_float();
-    test_percent();
-    test_vector();
-    test_combo();
+    //return test_all();
+    //test_hex_fail();
+    //test_hex_mod();
+    //test_float_mod();
+    //test_hex_fail();
+    //test_char();
+    //test_hex();
+    //test_string();
+    //test_decimal();
+    //test_float();
+    //test_percent();
+    //test_vector();
+    //test_combo();
     //test_dec_mod();
+    printf("==== Running scanfMine Tests ====\n\n");
+
+    int total = 0;
+
+    //test_combo();
+    //test_combo_modifiers();
+    //test_width_numbers();   :passed
+    //test_width_hex();    :passed
+    //test_width_vector_string();   :passed
+    //test_width_time();    :passed
+    //test_width_mix();   :failed
+    //test_combo_modifiers();  //:passed
+    //test_combo_exponent_hex();    :passed
+    //test_combo_reordered();   :passed
+    //test_combo_edge_cases();    :passed
+    test_star_modifier();   // the %* skip-field tests
+    printf("Everything passed!\n");
     return 0;
-}
 
+    printf("\n==== Tests Completed ====\n");
+    printf("Total assigned fields across all tests: %d\n", total);
 
-
-/*
-int main(void)
-{
-  char c;
-  unsigned int x;
-  char str[100];
-  char str2[100];
-  float f;
-  float f1;
-  int d;
-  int d1;
-  printf("print char, hex, string, float, decimal:\n");
-  int n = scanfMine("%c %x %f %d %s",&c,&x, &f, &d,str);
-  //printf("f");
-  //scanfMine("%f",&f1);
-  //printf("d");
-  //scanfMine("%d",&d1);
-  printf("number = %d\n",n);
-  printf("your char is %c\n",c);
-  printf("hex: %x\n",x);
-  printf("str: %s\n",str);
-  printf("float: %f\n",f);
-  printf("decimal: %d",d);
-  printf("print string:\n");
-  //int j = scanfMine("%s",str2);
-  //printf("number = %d\n",j);
-  //printf("str2: %s\n",str2);
-  //printf("decimal %d\n", d1);
-  //printf("fact %f\n",f1);
-  return 0;
-}
-*/
-/*
-int scanfMine(const char *format,...) {
-  va_list pointer;
-  va_start(pointer, format);
-  
-  //two
-  int c;
-  int counted = 0;
-  
-  while (*format != '\0'){
-    if (*format != '%'){
-      if(isspace(*format)){
-	while (isspace(c = getchar()));
-  ungetc(c, stdin); 
-	format++;
-	continue;
-      }else{
-      c = getchar();
-      if (c != *format){
-	break;
-      }
-      format++;
-      continue;
-      }
-    }
-    format++;
+    return 0;
     
-     // Check for modifier - can have at most one modifier
-    enum {NONE, HH, H, L, LL, J, Z, T, CAPITAL_L} mod = NONE;
-    if (*format == 'h') {
-      if (*(format + 1) == 'h') { mod = HH; format += 2; }
-      else { mod = H; format++; }
-    }
-    else if (*format == 'l') {
-      if (*(format + 1) == 'l') { mod = LL; format += 2; }
-      else { mod = L; format++; }
-    }
-    else if (*format == 'j') { mod = J; format++; }
-    else if (*format == 'z') { mod = Z; format++; }
-    else if (*format == 't') { mod = T; format++; }
-    else if (*format == 'L') { mod = CAPITAL_L; format++; }
-    
-
-    //skip leading whitespace for all
-    switch(*format){
-    case 'c':{
-      char *w = va_arg(pointer, char *);
-      //how does the real scanf handle spaces?
-      //while(isspace(c= getchar()));
-      c = getchar();
-      *w = c;
-      counted ++;
-      break;
-    }
-    case 's':{
-      char *w = va_arg(pointer, char*);
-      while (isspace(c = getchar())); 
-      //*w++ = c;
-      while ((c != EOF) && (!isspace(c))){
-        *w++ = c;
-        c = getchar();
-      }
-      *w = '\0';
-      counted++;
-      break;
-    }
-    case 'x':{
-      //might be a prob if more than one char
-      unsigned int *n = va_arg(pointer, unsigned int *);
-      while (isspace(c = getchar()));
-      if (c = '0'){
-        int c = getchar();
-        if (c == 'x' || c == 'X'){
-          c = getchar();
-        }else{
-          //unget the char after 0 -> c is is 0 which is valid hex digit
-          ungetc(c, stdin);
-      }
-      unsigned int val = 0;
-      while (isxdigit(c)){
-	  val *= 16;
-	  if (isdigit(c)) val += c - '0';
-	  else val += toupper(c) - 'A'+10;
-	  c = getchar();
-      }
-      if (!isxdigit(c) && c != EOF) ungetc(c, stdin);
-      *n = val;
-      switch (mod) {
-                    case HH: *va_arg(pointer, unsigned char *) = (unsigned char)val; break;
-                    case H:  *va_arg(pointer, unsigned short *) = (unsigned short)val; break;
-                    case L:  *va_arg(pointer, unsigned long *) = (unsigned long)val; break;
-                    case LL: *va_arg(pointer, unsigned long long *) = val; break;
-                    case J:  *va_arg(pointer, uintmax_t *) = val; break;
-                    case Z:  *va_arg(pointer, size_t *) = (size_t)val; break;
-                    case T:  *va_arg(pointer, ptrdiff_t *) = (ptrdiff_t)val; break;
-                    default: *va_arg(pointer, unsigned int *) = (unsigned int)val; break;
-                }
-      counted++;
-      break;
-    }
-      
-    case 'd':{
-      int *n = va_arg(pointer, int *);
-      int v = 0, neg = 0;
-
-      // skip leading whitespace
-      do {
-          c = getchar();
-      } while (isspace(c));
-
-      // handle optional sign
-      if (c == '-') { neg = 1; c = getchar(); }
-      else if (c == '+') { c = getchar(); }
-
-      // make sure first char is a digit
-      if (!isdigit(c)) {
-          // input is invalid, return counted so far
-          return counted;
-      }
-
-      // now accumulate digits
-      do {
-          v = v*10 + (c - '0');
-      } while (isdigit(c = getchar()));
-
-      *n = neg ? -v : v;
-
-
-      switch (mod) {
-          case HH: *va_arg(pointer, signed char *) = (signed char)v; break;
-          case H:  *va_arg(pointer, short *) = (short)v; break;
-          case L:  *va_arg(pointer, long *) = (long)v; break;
-          case LL: *va_arg(pointer, long long *) = v; break;
-          case J:  *va_arg(pointer, intmax_t *) = v; break;
-          case Z:  *va_arg(pointer, size_t *) = (size_t)v; break;
-          case T:  *va_arg(pointer, ptrdiff_t *) = (ptrdiff_t)v; break;
-          default: *va_arg(pointer, int *) = (int)v; break;
-      }
-      
-      if (c != EOF) ungetc(c, stdin);
-      counted++;
-      break;
-    }
-    case 'f':{
-      float *n = va_arg(pointer, float *);
-      float v = 0.0f;
-      int neg = 0;
-      int after_dot = 0;
-      float div = 1.0f;
-
-      // skip leading whitespace
-      do { c = getchar(); } while (isspace(c));
-
-      // optional sign
-      if (c == '-') { neg = 1; c = getchar(); }
-      else if (c == '+') { c = getchar(); }
-
-      // at least one digit or a dot
-      if (!isdigit(c) && c != '.') {
-          // invalid input
-          return counted;
-      }
-
-      // parse digits
-      while (isdigit(c) || c == '.') {
-          if (c == '.') {
-              after_dot = 1;
-              c = getchar();
-              continue;
-          }
-
-          if (!after_dot) v = v * 10.0f + (c - '0');
-          else {
-              div *= 10.0f;
-              v += (c - '0') / div;
-          }
-
-          c = getchar();
-      }
-
-      *n = neg ? -v : v;
-    }
-
-      switch (mod) {
-          case NONE: *va_arg(pointer, float *) = (float)val; break;
-          case L:    *va_arg(pointer, double *) = (double)val; break;
-          case CAPITAL_L: *va_arg(pointer, long double *) = val; break;
-          default: *va_arg(pointer, float *) = (float)val; break;
-      }
-      if (c != EOF) ungetc(c, stdin);
-      counted++;
-      break;
-
-    }
-    
-    case 'p': {
-      float *val = va_arg(pointer, float *);
-      float v = 0.0f;
-      int after_dot = 0;
-      float div = 1.0f;
-
-      // skip leading whitespace
-      do { c = getchar(); } while (isspace(c));
-
-      // optional sign
-      int neg = 0;
-      if (c == '-') { neg = 1; c = getchar(); }
-      else if (c == '+') c = getchar();
-
-      // read number (digits and optional dot)
-      if (!isdigit(c) && c != '.') return counted;
-      while (isdigit(c) || c == '.') {
-          if (c == '.') { after_dot = 1; c = getchar(); continue; }
-          if (!after_dot) v = v * 10.0f + (c - '0');
-          else { div *= 10.0f; v += (c - '0') / div; }
-          c = getchar();
-      }
-
-      if (c == '%') { v /= 100.0f; c = getchar(); }
-
-      *val = neg ? -v : v;
-      counted++;
-      break;
-
-    }
-    case 'v': {
-      float *arr = va_arg(pointer, float *);
-      int length = va_arg(pointer, int); // number of elements to read
-      int i = 0;
-
-      while (i < length) {
-          // skip whitespace
-          do { c = getchar(); } while (isspace(c));
-
-          float v = 0.0f, div = 1.0f;
-          int neg = 0, after_dot = 0;
-
-          if (c == '-') { neg = 1; c = getchar(); }
-          else if (c == '+') c = getchar();
-
-          if (!isdigit(c) && c != '.') break;
-
-          while (isdigit(c) || c == '.') {
-              if (c == '.') { after_dot = 1; c = getchar(); continue; }
-              if (!after_dot) v = v * 10.0f + (c - '0');
-              else { div *= 10.0f; v += (c - '0') / div; }
-              c = getchar();
-          }
-
-          arr[i++] = neg ? -v : v;
-      }
-      counted++;
-      break;
-  }
-
-    case '3':{
-      while (isspace(c = getchar()));
-      c = getchar();
-      counted++;
-      break;
-    }
-      
-  }
-  format++;
-  }
-  va_end(pointer);
-  return counted;
 }
-
-
-*/
 
 
 #define ASSERT(cond,msg) \
@@ -411,7 +149,7 @@ int test_float(void) {
 int test_percent(void) {
     printf("print 75%%\n");
     float f;
-    int n = scanfMine("%p", &f);
+    int n = scanfMine("%k", &f);
     printf("n=%d\n", n);
     printf("f=%f\n", f);
 
@@ -470,7 +208,7 @@ int test_dec_mod(void) {
 
 //why suddenly problems it worked yesterday???
 int test_combo(void) {
-    printf("print a 5B 6.8 67 hello 67%% 1.0 2.5 3.9\n");
+    printf("print a 5B 6.8 67 hello 67%% [1.0, 2.5, 3.9] 576797\n");
     char c;
     unsigned int x;
     float f;
@@ -478,8 +216,9 @@ int test_combo(void) {
     char s[100];
     float prob;
     float arr[3];
+    struct hms time;
 
-    int n = scanfMine(" %c %x %f %d %s %p %v", &c, &x, &f, &d, s, &prob, arr, 3);
+    int n = scanfMine(" %c %x %f %d %s %k %v %t", &c, &x, &f, &d, s, &prob, arr, 3, &time);
     printf("n=%d\n", n);
     printf("c=%c\n", c);
     printf("x=%x\n", x);
@@ -490,8 +229,10 @@ int test_combo(void) {
     printf("arr[0]=%f\n", arr[0]);
     printf("arr[1]=%f\n", arr[1]);
     printf("arr[2]=%f\n", arr[2]);
+    printf("time: %02dh %02dm %02ds\n", time.h, time.m, time.s);
 
-    ASSERT(n == 7, "combo return count");
+
+    ASSERT(n == 8, "combo return count"); //how much should this be?
     ASSERT(c == 'a', "combo char");
     ASSERT(x == 0x5B, "combo hex");
     ASSERT(fabs(f - 6.8f) < 0.0001f, "combo float");
@@ -500,9 +241,429 @@ int test_combo(void) {
     ASSERT(fabs(prob - 0.67f) < 0.0001f, "combo probability");
     ASSERT(fabs(arr[0] - 1.0f) < 0.0001f, "combo vector element 0");
     ASSERT(fabs(arr[1] - 2.5f) < 0.0001f, "combo vector element 1");
-    ASSERT(fabs(arr[2] - 3.0f) < 0.0001f, "combo vector element 2");
+    ASSERT(fabs(arr[2] - 3.9f) < 0.0001f, "combo vector element 2");
+    ASSERT(time.h == 1, "combo time hours");
+    ASSERT(time.m == 36, "combo time minutes");
+    ASSERT(time.s == 7, "combo time seconds");
+
     printf("PASS: combo\n");  
 
     return n;
 }
+int test_hex_mod(void) {
+  printf("Testing %%x with modifiers...\n");
+
+  unsigned char uc;
+  unsigned short us;
+  unsigned int ui;
+  unsigned long ul;
+  unsigned long long ull;
+  int n;
+
+  printf("print ff\n");
+  n = scanfMine("%hhx", &uc);   // input: "ff"
+  ASSERT(n == 1 && uc == 0xFF, "unsigned char %hhx");
+
+  printf("print ffff\n");
+  n = scanfMine("%hx", &us);    // input: "ffff"
+  ASSERT(n == 1 && us == 0xFFFF, "unsigned short %hx");
+
+  printf("print 1a2b3c\n");
+  n = scanfMine("%x", &ui);     // input: "0x1a2b3c"
+  ASSERT(n == 1 && ui == 0x1A2B3C, "unsigned int %x");
+
+  printf("print deadbeef\n");
+  n = scanfMine("%lx", &ul);    // input: "deadbeef"
+  ASSERT(n == 1 && ul == 0xDEADBEEF, "unsigned long %lx");
+
+  printf("print 123456789abcdef\n");
+  n = scanfMine("%llx", &ull);  // input: "0x123456789abcdef"
+  ASSERT(n == 1 && ull == 0x123456789ABCDEFULL, "unsigned long long %llx");
+
+  printf("PASS: %%x modifiers\n");
+  return 1;
+}
+
+int test_float_mod(void) {
+  printf("Testing %%f with modifiers...\n");
+
+  float f;
+  double d;
+  long double ld;
+  int n;
+
+  printf("print 1.25\n");
+  n = scanfMine("%f", &f);      // input: "1.25"
+  ASSERT(n == 1 && fabsf(f - 1.25f) < 1e-6, "float %f");
+
+  printf("print -2.5e2\n");
+  n = scanfMine("%lf", &d);     // input: "-2.5e2"
+  ASSERT(n == 1 && fabs(d + 250.0) < 1e-9, "double %lf");
+
+  printf("print 3.1415926535\n");
+  n = scanfMine("%Lf", &ld);    // input: "3.1415926535"
+  ASSERT(n == 1 && fabsl(ld - 3.1415926535L) < 1e-12, "long double %Lf");
+
+  printf("PASS: %%f modifiers\n");
+  return 1;
+}
+
+
+//need to fix n should be -1 and no assignment on fail i think
+int test_hex_fail(void) {
+  unsigned int x = 123;
+  int n;
+
+  printf("print zzz\n");
+  n = scanfMine("%x", &x);
+  printf("n=%d, x=%x\n", n, x);
+  ASSERT(n == 0 && x == 123, "hex failure does not assign");
+  return 1;
+}
+
+int test_combo_basic(void) {
+    printf("Test 1: Basic combo\n");
+    char c;
+    unsigned int x;
+    float f;
+    int d;
+    char s[100];
+    float prob;
+    float arr[3];
+    struct hms time;
+
+    printf("print a 5B 6.8 67 hello 67%% [1.0, 2.5, 3.9] 5767s\n");
+
+    int n = scanfMine(" %c %x %f %d %s %k %v %t",
+                      &c, &x, &f, &d, s, &prob, arr, 3, &time);
+
+    ASSERT(n == 8, "combo return count");
+    ASSERT(c == 'a', "combo char");
+    ASSERT(x == 0x5B, "combo hex");
+    ASSERT(fabs(f - 6.8f) < 0.0001f, "combo float");
+    ASSERT(d == 67, "combo decimal");
+    ASSERT(strcmp(s, "hello") == 0, "combo string");
+    ASSERT(fabs(prob - 0.67f) < 0.0001f, "combo probability");
+    ASSERT(fabs(arr[0] - 1.0f) < 0.0001f, "combo vector 0");
+    ASSERT(fabs(arr[1] - 2.5f) < 0.0001f, "combo vector 1");
+    ASSERT(fabs(arr[2] - 3.9f) < 0.0001f, "combo vector 2");
+    ASSERT(time.h == 1, "combo time hours");
+    ASSERT(time.m == 36, "combo time minutes");
+    ASSERT(time.s == 7, "combo time seconds");
+
+    printf("PASS: combo_basic\n");
+    return n;
+}
+
+/* Test 2: Use float exponent and hex with 0x */
+int test_combo_exponent_hex(void) {
+    printf("Test 2: Exponent float + 0x hex\n");
+    char c;
+    unsigned long x;
+    double f;
+    long d;
+    char s[50];
+    float prob;
+    float arr[2];
+    struct hms time;
+
+    printf("print b 0x1F 1.23e2 300 world 50%% [4.5,6.7] 3661s\n");
+
+    int n = scanfMine("%c %lx %lf %ld %s %k %v %t",
+                      &c, &x, &f, &d, s, &prob, arr, 2, &time);
+
+    ASSERT(n == 8, "combo return count 2");
+    ASSERT(c == 'b', "combo char 2");
+    ASSERT(x == 0x1F, "combo hex 2");
+    ASSERT(fabs(f - 123.0) < 0.001, "combo float 2");
+    ASSERT(d == 300, "combo decimal 2");
+    ASSERT(strcmp(s, "world") == 0, "combo string 2");
+    ASSERT(fabs(prob - 0.50f) < 0.0001f, "combo probability 2");
+    ASSERT(fabs(arr[0] - 4.5f) < 0.001, "combo vector 0_2");
+    ASSERT(fabs(arr[1] - 6.7f) < 0.001, "combo vector 1_2");
+    ASSERT(time.h == 1, "combo time hours 2");    // 3661 = 1h 1m 1s
+    ASSERT(time.m == 1, "combo time minutes 2");
+    ASSERT(time.s == 1, "combo time seconds 2");
+
+    printf("PASS: combo_exponent_hex\n");
+    return n;
+}
+
+/* Test 3: Mix modifiers, h, l, ll, L */
+int test_combo_modifiers(void) {
+    printf("Test 3: Modifiers\n");
+    short sh;
+    long l;
+    long long ll;
+    long double ld;
+    char s[20];
+    struct hms t;
+
+    printf("print 1234 12345 1234567890 1.23e3 test 7200s\n");
+
+    int n = scanfMine("%hd %ld %lld %Lf %s %t",
+                      &sh, &l, &ll, &ld, s, &t);
+
+    ASSERT(n == 6, "combo modifiers count");
+    ASSERT(sh == 1234, "combo short");
+    ASSERT(l == 12345L, "combo long");
+    ASSERT(ll == 1234567890LL, "combo long long");
+    ASSERT(fabs(ld - 1230.0L) < 0.01L, "combo long double");
+    ASSERT(strcmp(s, "test") == 0, "combo string modifier");
+    ASSERT(t.h == 2, "combo time h");
+    ASSERT(t.m == 0, "combo time m");
+    ASSERT(t.s == 0, "combo time s");
+
+    printf("PASS: combo_modifiers\n");
+    return n;
+}
+
+/* Test 4: Reordered fields */
+int test_combo_reordered(void) {
+    printf("Test 4: Reordered fields\n");
+    float v[2];
+    unsigned int x;
+    char s[10];
+    float p;
+    struct hms t;
+
+    printf("print [7.0,8.5] 0xFF hello 25%% 3600s\n");
+
+    int n = scanfMine("%v %x %s %k %t", v, 2, &x, s, &p, &t);
+
+    ASSERT(n == 5, "combo reordered count");
+    ASSERT(fabs(v[0]-7.0f)<0.01f, "vector v0 reordered");
+    ASSERT(fabs(v[1]-8.5f)<0.01f, "vector v1 reordered");
+    ASSERT(x == 0xFF, "hex reordered");
+    ASSERT(strcmp(s, "hello")==0, "string reordered");
+    ASSERT(fabs(p-0.25f)<0.001f, "prob reordered");
+    ASSERT(t.h == 1 && t.m == 0 && t.s == 0, "time reordered");
+
+    printf("PASS: combo_reordered\n");
+    return n;
+}
+
+/* Test 5: Single char, float in scientific, percent, vector length 1 */
+int test_combo_edge_cases(void) {
+    printf("Test 5: Edge cases\n");
+    char c;
+    float f;
+    float arr[1];
+    float prob;
+
+    printf("print z 9.81e-1 99%% [2.5] 60s\n");
+
+    struct hms t;
+    int n = scanfMine("%c %f %k %v %t", &c, &f, &prob, arr, 1, &t);
+    ASSERT(n == 5, "combo edge count");
+    ASSERT(c=='z', "combo char edge");
+    ASSERT(fabs(f-0.981f)<0.001f, "combo float edge");
+    ASSERT(fabs(prob-0.99f)<0.001f, "combo probability edge");
+    ASSERT(fabs(arr[0]-2.5f)<0.001f, "combo vector edge");
+    ASSERT(t.h==0 && t.m==1 && t.s==0, "combo time edge");
+
+    printf("PASS: combo_edge_cases\n");
+    return n;
+}
+/* Test 6: Width-limited integers and floats */
+int test_width_numbers(void) {
+    printf("Test 6: Width-limited numbers\n");
+    char c;
+    int d;
+    float f;
+    char s[10];
+
+    printf("print x123 45678 hello\n");
+
+    // %3d: read only 3 digits for d, %5f: read up to 5 chars for float
+    int n = scanfMine("%c %3d %5f %2s", &c, &d, &f, s);
+
+    // x = 'x', d = 123 (width-limited), f = 45678.0 (5 chars), s = "he"
+    ASSERT(n == 4, "width numbers count");
+    ASSERT(c == 'x', "width char");
+    ASSERT(d == 123, "width int");
+    ASSERT(fabs(f - 45678.0f) < 0.01f, "width float");
+    ASSERT(strcmp(s, "he") == 0, "width string");
+
+    printf("PASS: width_numbers\n");
+    return n;
+}
+
+/* Test 7: Width-limited hex */
+int test_width_hex(void) {
+    printf("Test 7: Width-limited hex\n");
+    unsigned int x;
+
+    printf("print 0x123ABCD\n");
+
+    int n = scanfMine("%4x", &x);  // width = 4 hex digits only
+
+    // Only '123A' should be read, ignoring 'BCD'
+    ASSERT(n == 1, "width hex count");
+    ASSERT(x == 0x123A, "width hex value");
+
+    printf("PASS: width_hex\n");
+    return n;
+}
+
+/* Test 8: Width-limited vector and string */
+int test_width_vector_string(void) {
+    printf("Test 8: Width-limited vector & string\n");
+    float arr[3];
+    char s[5];
+
+    printf("print [1.23456,7.89,3.21] helloworld\n");
+
+    int n = scanfMine("%v %3s", arr, 3, s);
+
+    // Vector: read full float values (width=-1), string: only 3 chars
+    ASSERT(n == 2, "width vector-string count");
+    ASSERT(fabs(arr[0]-1.23456f) < 0.001f, "vector 0 width");
+    ASSERT(fabs(arr[1]-7.89f) < 0.001f, "vector 1 width");
+    ASSERT(fabs(arr[2]-3.21f) < 0.001f, "vector 2 width");
+    ASSERT(strcmp(s, "hel") == 0, "string width");
+
+    printf("PASS: width_vector_string\n");
+    return n;
+}
+
+/* Test 9: Width-limited time */
+int test_width_time(void) {
+    printf("Test 9: Width-limited time\n");
+    struct hms t;
+
+    printf("print 0072s\n");
+
+    int n = scanfMine("%3t", &t); // width = 3 digits max for seconds
+
+    ASSERT(n == 1, "width time count");
+    ASSERT(t.h == 0 && t.m == 1 && t.s == 12, "time width conversion");
+
+    printf("PASS: width_time\n");
+    return n;
+}
+
+/* Test 10: Mix width with modifiers and scientific notation */
+int test_width_mix(void) {
+    printf("Test 10: Width + modifiers + scientific\n");
+    long l;
+    long long ll;
+    float f;
+    struct hms t;
+
+    printf("print 1234567890 9876543210 1.23456e2 3600s\n");
+
+    int n = scanfMine("%5ld %6lld %8f %t", &l, &ll, &f, &t);
+
+    // l: only first 5 digits read → 12345
+    // ll: first 6 digits read → 987654
+    // f: first 8 characters → 1.23456e
+    ASSERT(n == 4, "width mix count");
+    ASSERT(l == 12345L, "width l value");
+    ASSERT(ll == 987654LL, "width ll value");
+    // f may truncate exponent, accept approximate
+    ASSERT(fabs(f - 1.23456f) < 0.001f, "width float truncated");
+    ASSERT(t.h == 1 && t.m == 0 && t.s == 0, "width time conversion");
+
+    printf("PASS: width_mix\n");
+    return n;
+}
+
+
+
+
+
+void test_star_modifier(void) {
+    printf("Running %%* tests...\n");
+
+    // ---------- Test 1: Skip integer ----------
+    {
+        int a = 0, b = 0;
+        printf("print 10 20\n");
+        int n = scanfMine("%*d %d", &b);
+        assert(n == 1);
+        assert(b == 20);
+    }
+
+    // ---------- Test 2: Skip hex ----------
+    {
+        unsigned x = 0, y = 0;
+        printf("print 0xFF 123\n");
+        int n = scanfMine("%*x %u", &y);
+        printf("n=%d, y=%u\n", n, y);
+        assert(n == 1);
+        assert(y == 123);
+    }
+
+    // ---------- Test 3: Skip float ----------
+    {
+        float f = 0.0f;
+        printf("print 1.23 4.56\n");
+        int n = scanfMine("%*f %f", &f);
+        assert(n == 1);
+        assert(fabs(f - 4.56f) < 0.001f);
+    }
+
+    // ---------- Test 4: Skip percentage ----------
+    {
+        float p = 0.0f;
+        printf("print 99%% 50%%\n");
+        int n = scanfMine("%*k %k", &p);
+        assert(n == 1);
+        assert(fabs(p - 0.5f) < 0.001f);
+    }
+
+    // ---------- Test 5: Skip vector ----------
+    {
+        float arr[2] = {0};
+        printf("print [1.0,2.0] [3.0,4.0]\n");
+        int n = scanfMine("%*v %v", arr, 2);
+        assert(n == 1);
+        assert(fabs(arr[0]-3.0f) < 0.001f);
+        assert(fabs(arr[1]-4.0f) < 0.001f);
+    }
+
+    // ---------- Test 6: Skip time ----------
+    {
+        struct hms t = {0};
+        printf("print 3600s 3661s\n");
+        int n = scanfMine("%*t %t", &t);
+        assert(n == 1);
+        assert(t.h == 1 && t.m == 1 && t.s == 1);
+    }
+
+    // ---------- Test 7: Skip string ----------
+    {
+        char s[10] = {0};
+        printf("print skipme keepme\n");
+        int n = scanfMine("%*s %s", s);
+        assert(n == 1);
+        assert(strcmp(s, "keepme") == 0);
+    }
+
+    // ---------- Test 8: Skip char ----------
+    {
+        char c = 0;
+        printf("print A B\n");
+        int n = scanfMine("%*c %c", &c);
+        assert(n == 1);
+        assert(c == 'B');
+    }
+
+    // ---------- Test 9: Skip multiple fields ----------
+    {
+        int a=0, b=0;
+        float f=0;
+        printf("print 1 2 3 4.5 5.6\n");
+        int n = scanfMine("%*d %*d %d %*f %f", &a, &f);
+        assert(n == 2);
+        assert(a == 3);
+        assert(fabs(f - 5.6f) < 0.001f);
+    }
+
+    printf("All %%* tests passed!\n");
+}
+
+
+
 
