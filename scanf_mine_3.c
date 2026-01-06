@@ -10,22 +10,22 @@ struct hms {
 };
 
 /* ================= HELPERS ================= */
-
+// Read a character from input
 static int read_char(void) {
     return getchar();
 }
-
+// Unread a character back to input
 static void unread_char(int c) {
     if (c != EOF) ungetc(c, stdin);
 }
-
+// Skip whitespace characters
 static void skip_ws(void) {
     int c;
     while (isspace(c = read_char()))
         ;
     unread_char(c);
 }
-
+// Match a literal character from input
 static int match_literal(char ch) {
     int c = read_char();
     if (c != ch) {
@@ -36,21 +36,21 @@ static int match_literal(char ch) {
 }
 
 /* ---------- Integer Parsing ---------- */
-
+// Parse integer of given base and width
 static int parse_int(long long *out, int base, int width) {
     int c, neg = 0, used = 0;
     long long val = 0;
-
+    // Skip leading whitespace
     skip_ws();
     c = getchar();
-
+    // Check for sign
     if (c == '-' || c == '+') {
         neg = (c == '-');
         width--;
         c = getchar();
     }
-
-    while (c != EOF && width-- != 0) {
+    // Parse digits
+    while (c != EOF && (width < 0 || width-- > 0)) {
         int digit;
         if (isdigit(c)) digit = c - '0';
         else if (isalpha(c)) digit = toupper(c) - 'A' + 10;
@@ -62,42 +62,43 @@ static int parse_int(long long *out, int base, int width) {
         used = 1;
         c = getchar();
     }
-
+    // Unread last character
     unread_char(c);
-
+    
     if (!used) return 0;
     *out = neg ? -val : val;
     return 1;
 }
 
 /* ---------- Floating Parsing ---------- */
-
+// Parse floating-point number with given width
 static int parse_float(long double *out, int width) {
     int c, neg = 0, used = 0;
-    long double val = 0.0, frac = 0.0, div = 1.0;
-
+    long double val = 0.0L, frac = 0.0L, div = 1.0L;
+    // Skip leading whitespace
     skip_ws();
     c = getchar();
-
-    if (c == '-' || c == '+') {
+    // Check for sign
+    if (c == '+' || c == '-') {
         neg = (c == '-');
         if (width > 0) width--;
         c = getchar();
     }
 
-    // integer part
-    while (isdigit(c) && (width != 0)) {
+    /* integer part */
+    while (isdigit(c) && width != 0) {
         val = val * 10 + (c - '0');
         used = 1;
         if (width > 0) width--;
         c = getchar();
     }
 
-    // fraction
-    if (c == '.' && (width != 0)) {
+    /* fractional part */
+    if (c == '.' && width != 0) {
         if (width > 0) width--;
         c = getchar();
-        while (isdigit(c) && (width != 0)) {
+        
+        while (isdigit(c) && width != 0) {
             frac = frac * 10 + (c - '0');
             div *= 10;
             used = 1;
@@ -107,26 +108,40 @@ static int parse_float(long double *out, int width) {
         val += frac / div;
     }
 
-    // exponent
-    if ((c == 'e' || c == 'E') && (width != 0)) {
+    /* exponent */
+    if ((c == 'e' || c == 'E') && width != 0) {
+        int save_width = width;
+        int sign = 1, exp = 0;
+        // consume 'e'/'E'
         if (width > 0) width--;
-        int exp_neg = 0, exp = 0;
-        c = getchar();
-        if ((c == '+' || c == '-') && (width != 0)) {
-            exp_neg = (c == '-');
+        int d = getchar();
+        // check for exponent sign
+        if (d == '+' || d == '-') {
+            sign = (d == '-') ? -1 : 1;
             if (width > 0) width--;
-            c = getchar();
+            d = getchar();
         }
-        while (isdigit(c) && (width != 0)) {
-            exp = exp * 10 + (c - '0');
-            used = 1;
+        // parse exponent digits
+        if (!isdigit(d)) {
+            unread_char(d);
+            unread_char(c);
+            goto done;
+        }
+        // restore width for exponent digits
+        while (isdigit(d) && width != 0) {
+            exp = exp * 10 + (d - '0');
             if (width > 0) width--;
-            c = getchar();
+            d = getchar();
         }
-        val *= powl(10.0L, exp_neg ? -exp : exp);
+        // apply exponent
+        unread_char(d);
+        val *= powl(10.0L, sign * exp);
     }
-
-    unread_char(c);
+    else {
+        // no exponent, unread last char
+        unread_char(c);
+    }
+    done:
 
     if (!used) return 0;
     *out = neg ? -val : val;
@@ -134,26 +149,20 @@ static int parse_float(long double *out, int width) {
 }
 
 
-/* ---------- Base-60 helper ---------- */
 
-static int parse_int_base60(int *out) {
-    long long v;
-    if (!parse_int(&v, 10, -1)) return 0;
-    if (v < 0 || v >= 60) return 0;
-    *out = (int)v;
-    return 1;
-}
+
 
 /* ================= scanfMine ================= */
-
+// Custom scanf implementation
 int scanfMine(const char *fmt, ...) {
+    // Variable argument list
     va_list ap;
     va_start(ap, fmt);
-
+    // Number of assigned fields
     int assigned = 0;
-
+    // Process format string
     while (*fmt) {
-
+        // Skip whitespace in format
         if (isspace(*fmt)) {
             // match any whitespace in input
             int c;
@@ -162,34 +171,34 @@ int scanfMine(const char *fmt, ...) {
             fmt++;
             continue;
         }
-
+        // Literal character
         if (*fmt != '%') {
             if (!match_literal(*fmt))
                 break;
             fmt++;
             continue;
         }
-
+        // Process format specifier
         fmt++;
-
+        // Handle '%%' literal
         if (*fmt == '%') {
             if (!match_literal('%'))
                 break;
             fmt++;
             continue;
         }
-
+        // Check for assignment suppression
         int assign = 1;
         if (*fmt == '*') {
             assign = 0;
             fmt++;
         }
-
+        // Parse width
         int width = 0;
         while (isdigit(*fmt))
             width = width * 10 + (*fmt++ - '0');
         if (width == 0) width = -1;
-
+        // Handle length modifiers
         enum { NONE, H, L, LL, BIGL } mod = NONE;
         if (*fmt == 'h') mod = H, fmt++;
         else if (*fmt == 'l') {
@@ -197,9 +206,9 @@ int scanfMine(const char *fmt, ...) {
             else mod = L, fmt++;
         }
         else if (*fmt == 'L') mod = BIGL, fmt++;
-
+        // Handle conversion specifiers
         switch (*fmt++) {
-
+        /* ---------- %d decimal integer ---------- */
         case 'd': {
             long long v;
             if (!parse_int(&v, 10, width)) goto done;
@@ -211,29 +220,32 @@ int scanfMine(const char *fmt, ...) {
             }
             break;
         }
-
+        /* ---------- %x hexadecimal integer ---------- */
         case 'x': {
             long long v;
             int c1, c2;
 
             skip_ws();
 
-            /* optional 0x / 0X */
+            int width_digits = width; // save original width for digits
+
+            // optional 0x / 0X prefix
             c1 = getchar();
             if (c1 == '0') {
                 c2 = getchar();
                 if (c2 != 'x' && c2 != 'X') {
-                    ungetc(c2, stdin);
-                    ungetc(c1, stdin);
+                    unread_char(c2);
+                    unread_char(c1);
                 }
-                // else: valid prefix, just consume and continue
+                // else do nothing, prefix consumed
             } else {
-                ungetc(c1, stdin);
+                unread_char(c1);
             }
 
-            if (!parse_int(&v, 16, width))
-                goto done;
 
+            if (!parse_int(&v, 16, width_digits)) // use digits-only width
+                goto done;
+            // assign value
             if (assign) {
                 if (mod == L) *va_arg(ap, unsigned long *) = (unsigned long)v;
                 else if (mod == LL) *va_arg(ap, unsigned long long *) = (unsigned long long)v;
@@ -244,7 +256,7 @@ int scanfMine(const char *fmt, ...) {
         }
 
 
-
+        /// ---------- %u unsigned decimal integer ----------
         case 'f': {
             long double v;
             if (!parse_float(&v, width)) goto done;
@@ -257,10 +269,12 @@ int scanfMine(const char *fmt, ...) {
             break;
         }
 
-        /* ---------- %p percentage ---------- */
+        /* ---------- %k percentage ---------- */
         case 'k': {
             long double v;
+            // parse float
             if (!parse_float(&v, width)) goto done;
+            // expect '%' literal
             if (!match_literal('%')) goto done;
             if (assign) {
                 *va_arg(ap, float *) = (float)(v / 100.0);
@@ -276,7 +290,7 @@ int scanfMine(const char *fmt, ...) {
 
             skip_ws();
             if (!match_literal('[')) goto done;
-
+            // read elements
             for (int i = 0; i < len; i++) {
                 long double v;
                 if (!parse_float(&v, -1)) goto done;
@@ -294,36 +308,36 @@ int scanfMine(const char *fmt, ...) {
         }
 
         /* ---------- %t time ---------- */
-    case 't': {
-        long long total_seconds;
-        struct hms *out = assign ? va_arg(ap, struct hms *) : NULL;
+        //accepts total seconds followed by 's' 
+        // returbns struct hms with h,m,s fields
+        case 't': {
+            long long total_seconds;
+            struct hms *out = assign ? va_arg(ap, struct hms *) : NULL;
 
-        skip_ws();
-        /* ignore width here */
-        if (!parse_int(&total_seconds, 10, -1))
-            goto done;
+            skip_ws();
+            /* ignore width here */
+            if (!parse_int(&total_seconds, 10, -1))
+                goto done;
 
-        if (total_seconds < 0)
-            goto done;
+            if (total_seconds < 0)
+                goto done;
 
-        if (!match_literal('s'))
-            goto done;
+            if (!match_literal('s'))
+                goto done;
 
-        int h = (int)(total_seconds / 3600);
-        int m = (int)((total_seconds % 3600) / 60);
-        int s = (int)(total_seconds % 60);
+            int h = (int)(total_seconds / 3600);
+            int m = (int)((total_seconds % 3600) / 60);
+            int s = (int)(total_seconds % 60);
 
-        if (assign) {
-            out->h = h;
-            out->m = m;
-            out->s = s;
-            assigned++;  // one field only
+            if (assign) {
+                out->h = h;
+                out->m = m;
+                out->s = s;
+                assigned++;  // one field only
+            }
+            break;
         }
-        break;
-    }
-
-
-
+        /* ---------- %s string ---------- */
         case 'c': {
             int c = getchar();
             if (c == EOF) goto done;
@@ -334,6 +348,7 @@ int scanfMine(const char *fmt, ...) {
             break;
         }
 
+        /* ---------- %s string ---------- */
         case 's': {
             char *s = assign ? va_arg(ap, char *) : NULL;
             skip_ws();
@@ -344,7 +359,7 @@ int scanfMine(const char *fmt, ...) {
                 if (assign) *s++ = c;
                 used = 1;
             }
-            //unread_char(c);
+            unread_char(c);
             if (!used) goto done;
             if (assign) *s = '\0';
             assigned++;
@@ -357,6 +372,7 @@ int scanfMine(const char *fmt, ...) {
     }
 
 done:
+    // End variable argument processing
     va_end(ap);
     return assigned;
 }
