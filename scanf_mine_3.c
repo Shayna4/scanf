@@ -2,6 +2,8 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <math.h>
+#include <limits.h>
+#include <float.h>
 
 struct hms {
     int h;
@@ -10,145 +12,129 @@ struct hms {
 };
 
 /* ================= HELPERS ================= */
-// Read a character from input
-static int read_char(void) {
-    return getchar();
-}
-// Unread a character back to input
-static void unread_char(int c) {
-    if (c != EOF) ungetc(c, stdin);
-}
-// Skip whitespace characters
+static int read_char(void) { return getchar(); }
+static void unread_char(int c) { if (c != EOF) ungetc(c, stdin); }
 static void skip_ws(void) {
     int c;
-    while (isspace(c = read_char()))
-        ;
+    while (isspace(c = read_char()));
     unread_char(c);
 }
-// Match a literal character from input
 static int match_literal(char ch) {
     int c = read_char();
-    if (c != ch) {
-        unread_char(c);
-        return 0;
-    }
+    if (c != ch) { unread_char(c); return 0; }
     return 1;
 }
 
 /* ---------- Integer Parsing ---------- */
-// Parse integer of given base and width
-static int parse_int(long long *out, int base, int width) {
+static int parse_int(long long *out, int base, int width, long long min_limit, long long max_limit) {
     int c, neg = 0, used = 0;
     long long val = 0;
-    // Skip leading whitespace
+
     skip_ws();
-    c = getchar();
-    // Check for sign
-    if (c == '-' || c == '+') {
+    c = read_char();
+
+    if (c == '+' || c == '-') {
         neg = (c == '-');
-        width--;
-        c = getchar();
+        if (width > 0) width--;
+        c = read_char();
     }
-    // Parse digits
+
     while (c != EOF && (width < 0 || width-- > 0)) {
         int digit;
         if (isdigit(c)) digit = c - '0';
         else if (isalpha(c)) digit = toupper(c) - 'A' + 10;
         else break;
-
         if (digit >= base) break;
+        
+        // Check for overflow 
+        long long limit = neg ? -min_limit : max_limit; 
+        if (val > (limit - digit) / base) { 
+            val = limit;  
+            // Consume remaining valid digits without parsing  
+            c = read_char();  
+            while (c != EOF && (width < 0 || width-- > 0)) {  
+                if (isdigit(c) || (isalpha(c) && toupper(c) - 'A' + 10 < base)) {  
+                    c = read_char();  
+                } else { 
+                    break; 
+                }  
+            }  
+           
+            used = 1;  
+            break; 
+        } 
 
         val = val * base + digit;
         used = 1;
-        c = getchar();
+        c = read_char();
     }
-    // Unread last character
+
     unread_char(c);
-    
     if (!used) return 0;
+
     *out = neg ? -val : val;
     return 1;
 }
 
 /* ---------- Floating Parsing ---------- */
-// Parse floating-point number with given width
 static int parse_float(long double *out, int width) {
     int c, neg = 0, used = 0;
     long double val = 0.0L, frac = 0.0L, div = 1.0L;
-    // Skip leading whitespace
+
     skip_ws();
-    c = getchar();
-    // Check for sign
+    c = read_char();
+
     if (c == '+' || c == '-') {
         neg = (c == '-');
         if (width > 0) width--;
-        c = getchar();
+        c = read_char();
     }
 
     /* integer part */
-    while (isdigit(c) && width != 0) {
+    while (isdigit(c) && (width < 0 || width-- > 0)) {
         val = val * 10 + (c - '0');
         used = 1;
-        if (width > 0) width--;
-        c = getchar();
+        c = read_char();
     }
 
     /* fractional part */
-    if (c == '.' && width != 0) {
-        if (width > 0) width--;
-        c = getchar();
-        
-        while (isdigit(c) && width != 0) {
+    if (c == '.' && (width < 0 || width-- > 0)) {
+        c = read_char();
+        while (isdigit(c) && (width < 0 || width-- > 0)) {
             frac = frac * 10 + (c - '0');
             div *= 10;
             used = 1;
-            if (width > 0) width--;
-            c = getchar();
+            c = read_char();
         }
         val += frac / div;
     }
 
     /* exponent */
-    if ((c == 'e' || c == 'E') && width != 0) {
-        int save_width = width;
+    if ((c == 'e' || c == 'E') && (width < 0 || width-- > 0)) {
         int sign = 1, exp = 0;
-        // consume 'e'/'E'
-        if (width > 0) width--;
-        int d = getchar();
-        // check for exponent sign
-        if (d == '+' || d == '-') {
-            sign = (d == '-') ? -1 : 1;
-            if (width > 0) width--;
-            d = getchar();
+        c = read_char();
+        if (c == '+' || c == '-') {
+            sign = (c == '-') ? -1 : 1;
+            c = read_char();
         }
-        // parse exponent digits
-        if (!isdigit(d)) {
-            unread_char(d);
+        if (!isdigit(c)) {
             unread_char(c);
             goto done;
         }
-        // restore width for exponent digits
-        while (isdigit(d) && width != 0) {
-            exp = exp * 10 + (d - '0');
-            if (width > 0) width--;
-            d = getchar();
+        while (isdigit(c) && (width < 0 || width-- > 0)) {
+            exp = exp * 10 + (c - '0');
+            c = read_char();
         }
-        // apply exponent
-        unread_char(d);
         val *= powl(10.0L, sign * exp);
     }
-    else {
-        // no exponent, unread last char
-        unread_char(c);
-    }
-    done:
 
+done:
+    unread_char(c);
     if (!used) return 0;
+
     *out = neg ? -val : val;
     return 1;
 }
-
-
 
 
 
@@ -199,8 +185,11 @@ int scanfMine(const char *fmt, ...) {
             width = width * 10 + (*fmt++ - '0');
         if (width == 0) width = -1;
         // Handle length modifiers
-        enum { NONE, H, L, LL, BIGL } mod = NONE;
-        if (*fmt == 'h') mod = H, fmt++;
+        enum { NONE, HH, H, L, LL, BIGL } mod = NONE;
+        if (*fmt == 'h'){
+            if (*(fmt + 1) == 'h') mod = HH, fmt += 2;
+            else mod = H, fmt++;
+        }
         else if (*fmt == 'l') {
             if (*(fmt + 1) == 'l') mod = LL, fmt += 2;
             else mod = L, fmt++;
@@ -211,9 +200,17 @@ int scanfMine(const char *fmt, ...) {
         /* ---------- %d decimal integer ---------- */
         case 'd': {
             long long v;
-            if (!parse_int(&v, 10, width)) goto done;
+            long long min_val = INT_MIN, max_val = INT_MAX; 
+            if (mod == HH) { min_val = SCHAR_MIN; max_val = SCHAR_MAX; }  
+            else if (mod == H) { min_val = SHRT_MIN; max_val = SHRT_MAX; }  
+            else if (mod == L) { min_val = LONG_MIN; max_val = LONG_MAX; }  
+            else if (mod == LL) { min_val = LLONG_MIN; max_val = LLONG_MAX; }  
+            
+            if (!parse_int(&v, 10, width, min_val, max_val)) goto done;  
             if (assign) {
-                if (mod == L) *va_arg(ap, long *) = (long)v;
+                if (mod == HH) *va_arg(ap, signed char *) = (signed char)v;
+                else if (mod == H) *va_arg(ap, short *) = (short)v;
+                else if (mod == L) *va_arg(ap, long *) = (long)v;
                 else if (mod == LL) *va_arg(ap, long long *) = v;
                 else *va_arg(ap, int *) = (int)v;
                 assigned++;
@@ -227,27 +224,40 @@ int scanfMine(const char *fmt, ...) {
 
             skip_ws();
 
-            int width_digits = width; // save original width for digits
+            int width_remaining = width;
 
             // optional 0x / 0X prefix
             c1 = getchar();
             if (c1 == '0') {
+                if (width_remaining > 0) width_remaining--;
                 c2 = getchar();
-                if (c2 != 'x' && c2 != 'X') {
+                if (c2 == 'x' || c2 == 'X') {
+                    if (width_remaining > 0) width_remaining--;
+                    // prefix consumed
+                } else {
                     unread_char(c2);
                     unread_char(c1);
+                    width_remaining = width;
                 }
-                // else do nothing, prefix consumed
             } else {
                 unread_char(c1);
             }
 
+            // Determine limits based on modifier  
+            long long min_val = 0, max_val = UINT_MAX;  
+            if (mod == HH) { max_val = UCHAR_MAX; }  
+            else if (mod == H) { max_val = USHRT_MAX; }  
+            else if (mod == L) { max_val = ULONG_MAX; }  
+            else if (mod == LL) { max_val = ULLONG_MAX; }  
 
-            if (!parse_int(&v, 16, width_digits)) // use digits-only width
+            if (!parse_int(&v, 16, width_remaining, min_val, max_val))  
                 goto done;
+                
             // assign value
             if (assign) {
-                if (mod == L) *va_arg(ap, unsigned long *) = (unsigned long)v;
+                if (mod == HH) *va_arg(ap, unsigned char *) = (unsigned char)v;  
+                else if (mod == H) *va_arg(ap, unsigned short *) = (unsigned short)v;  
+                else if (mod == L) *va_arg(ap, unsigned long *) = (unsigned long)v;
                 else if (mod == LL) *va_arg(ap, unsigned long long *) = (unsigned long long)v;
                 else *va_arg(ap, unsigned int *) = (unsigned int)v;
                 assigned++;
@@ -255,16 +265,25 @@ int scanfMine(const char *fmt, ...) {
             break;
         }
 
-
-        /// ---------- %u unsigned decimal integer ----------
+        /// ---------- %f floating point number ----------
         case 'f': {
             long double v;
             if (!parse_float(&v, width)) goto done;
             if (assign) {
-                if (mod == BIGL) *va_arg(ap, long double *) = v;
-                else if (mod == L) *va_arg(ap, double *) = (double)v;
-                else *va_arg(ap, float *) = (float)v;
-                assigned++;
+                if (mod == BIGL) {
+                    *va_arg(ap, long double *) = v;
+                }
+                 else if (mod == L){
+                     if (v > DBL_MAX) v = DBL_MAX;
+                     else if (v < -DBL_MAX) v = -DBL_MAX;
+                     *va_arg(ap, double *) = (double)v;
+                 }
+                 else{
+                     if (v > FLT_MAX) v = FLT_MAX;
+                     else if (v < -FLT_MAX) v = -FLT_MAX;
+                     *va_arg(ap, float *) = (float)v;
+                 }
+                 assigned++;
             }
             break;
         }
@@ -316,7 +335,7 @@ int scanfMine(const char *fmt, ...) {
 
             skip_ws();
             /* ignore width here */
-            if (!parse_int(&total_seconds, 10, -1))
+            if (!parse_int(&total_seconds, 10, -1, 0, LLONG_MAX))
                 goto done;
 
             if (total_seconds < 0)
@@ -337,35 +356,40 @@ int scanfMine(const char *fmt, ...) {
             }
             break;
         }
-        /* ---------- %s string ---------- */
+        /* ---------- %c character ---------- */
         case 'c': {
-            int c = getchar();
-            if (c == EOF) goto done;
-            if (assign) {
-                *va_arg(ap, char *) = (char)c;
-                assigned++;
-            }
+            int num_chars = (width > 0) ? width : 1; //new line
+            char *s = assign ? va_arg(ap, char *) : NULL; //new line
+            for (int i = 0; i < num_chars; i++) { //new line
+                int c = getchar(); //new line
+                if (c == EOF) goto done; //new line
+                if (assign) s[i] = (char)c; //new line
+            } //new line
+            if (assign) assigned++; //new line
             break;
         }
+
 
         /* ---------- %s string ---------- */
         case 's': {
             char *s = assign ? va_arg(ap, char *) : NULL;
             skip_ws();
             int c, used = 0;
-            while ((c = getchar()) != EOF &&
-                   !isspace(c) &&
-                   width-- != 0) {
+            int count = 0;
+            while ((c = getchar()) != EOF && !isspace(c)) {
+                if (width >0 && count >= width) break;
                 if (assign) *s++ = c;
                 used = 1;
+                count++;
             }
             unread_char(c);
             if (!used) goto done;
-            if (assign) *s = '\0';
-            assigned++;
+            if (assign){
+                *s = '\0';
+                assigned++;
+            }
             break;
         }
-
         default:
             goto done;
         }

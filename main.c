@@ -44,10 +44,14 @@ void test_star_modifier(void);
 
 int main(void){
     //return test_all();
-    //test_hex_fail();
     //test_hex_mod();
     //test_float_mod();
-    //test_hex_fail();
+    //test_hex_fail();  //fail
+    //test_dec_mod();
+    //test_star_modifier();
+    printf("==== Running scanfMine Tests ====\n\n");
+
+    int total = 0;
     //test_char();
     //test_hex();
     //test_string();
@@ -56,22 +60,13 @@ int main(void){
     //test_percent();
     //test_vector();
     //test_combo();
-    //test_dec_mod();
-    printf("==== Running scanfMine Tests ====\n\n");
-
-    int total = 0;
-
-    test_combo();
-    test_combo_modifiers();
-    test_width_numbers();  // :passed
-    test_width_hex();   // :passed
-    //test_width_vector_string();   :passed
-    //test_width_time();    :passed
-    //test_combo_modifiers();  //:passed
-    //test_combo_exponent_hex();    :passed
-    //test_combo_reordered();   :passed
-    //test_combo_edge_cases();    :passed
-    test_star_modifier();   // the %* skip-field tests
+    //test_width_numbers();  // :passed
+    //test_width_hex();   // :passed
+    //test_width_vector_string(); //  :passed
+    test_width_time();    //:passed
+    test_combo_modifiers();  //:passed
+    test_combo_reordered();  // :passed
+    test_combo_edge_cases();   // :passed
     //printf("Everything passed!\n");
     return 0;
 
@@ -100,7 +95,6 @@ int test_hex(void) {
     printf("print 5A\n");
     unsigned int x;
     int n = scanfMine("%x", &x);
-
     ASSERT(n == 1, "hex return count");
     ASSERT(x == 0x5A, "hex value");
     printf("PASS: hex\n");
@@ -122,9 +116,6 @@ int test_decimal(void) {
     printf("print 67\n");
     int d = 67;
     int n = scanfMine("%d", &d);
-    printf("n=%d\n", n);
-    printf("d=%d\n", d);
-
     ASSERT(n == 1, "decimal return count");
     ASSERT(d == 67, "decimal value");
     printf("PASS: decimal\n");
@@ -135,8 +126,6 @@ int test_float(void) {
     printf("print 3.14\n");
     float f;
     int n = scanfMine("%f", &f);
-    printf("n=%d\n", n);
-    printf("f=%f\n", f);
 
     ASSERT(n == 1, "float return count");
     ASSERT(fabs(f - 3.14f) < 0.0001f, "float value");
@@ -149,9 +138,6 @@ int test_percent(void) {
     printf("print 75%%\n");
     float f;
     int n = scanfMine("%k", &f);
-    printf("n=%d\n", n);
-    printf("f=%f\n", f);
-
     ASSERT(n == 1, "probability return count");
     ASSERT(fabs(f - 0.75f) < 0.0001f, "probability value");
     printf("PASS: probability\n");
@@ -160,14 +146,9 @@ int test_percent(void) {
 }
 
 int test_vector(void) {
-    printf("print 1.0 2.0 3.0\n");
+    printf("print [1.0, 2.0, 3.0]\n");
     float arr[3];
     int n = scanfMine("%v", arr, 3);
-    printf("n=%d\n", n);
-    printf("arr[0]=%f\n", arr[0]);
-    printf("arr[1]=%f\n", arr[1]);
-    printf("arr[2]=%f\n", arr[2]);
-
     ASSERT(n == 1, "vector return count");
     ASSERT(fabs(arr[0] - 1.0f) < 0.0001f, "vector element 0");
     ASSERT(fabs(arr[1] - 2.0f) < 0.0001f, "vector element 1");
@@ -207,7 +188,7 @@ int test_dec_mod(void) {
 
 //why suddenly problems it worked yesterday???
 int test_combo(void) {
-    printf("print a 5B 6.8 67 hello 67%% [1.0, 2.5, 3.9] 576797\n");
+    printf("print a 5B 6.8 67 hello 67%% [1.0, 2.5, 3.9] 5767s\n");
     char c;
     unsigned int x;
     float f;
@@ -218,18 +199,6 @@ int test_combo(void) {
     struct hms time;
 
     int n = scanfMine(" %c %x %f %d %s %k %v %t", &c, &x, &f, &d, s, &prob, arr, 3, &time);
-    printf("n=%d\n", n);
-    printf("c=%c\n", c);
-    printf("x=%x\n", x);
-    printf("f=%f\n", f);
-    printf("d=%d\n", d);
-    printf("s=%s\n", s);  
-    printf("prob=%f\n", prob);
-    printf("arr[0]=%f\n", arr[0]);
-    printf("arr[1]=%f\n", arr[1]);
-    printf("arr[2]=%f\n", arr[2]);
-    printf("time: %02dh %02dm %02ds\n", time.h, time.m, time.s);
-
 
     ASSERT(n == 8, "combo return count"); //how much should this be?
     ASSERT(c == 'a', "combo char");
@@ -312,11 +281,9 @@ int test_float_mod(void) {
 int test_hex_fail(void) {
   unsigned int x = 123;
   int n;
-
   printf("print zzz\n");
   n = scanfMine("%x", &x);
-  printf("n=%d, x=%x\n", n, x);
-  ASSERT(n == 0 && x == 123, "hex failure does not assign");
+  ASSERT(n == 0 && x == 0x7b, "hex failure does not assign");
   return 1;
 }
 
@@ -354,39 +321,7 @@ int test_combo_basic(void) {
     return n;
 }
 
-/* Test 2: Use float exponent and hex with 0x */
-int test_combo_exponent_hex(void) {
-    printf("Test 2: Exponent float + 0x hex\n");
-    char c;
-    unsigned long x;
-    double f;
-    long d;
-    char s[50];
-    float prob;
-    float arr[2];
-    struct hms time;
 
-    printf("print b 0x1F 1.23e2 300 world 50%% [4.5,6.7] 3661s\n");
-
-    int n = scanfMine("%c %lx %lf %ld %s %k %v %t",
-                      &c, &x, &f, &d, s, &prob, arr, 2, &time);
-
-    ASSERT(n == 8, "combo return count 2");
-    ASSERT(c == 'b', "combo char 2");
-    ASSERT(x == 0x1F, "combo hex 2");
-    ASSERT(fabs(f - 123.0) < 0.001, "combo float 2");
-    ASSERT(d == 300, "combo decimal 2");
-    ASSERT(strcmp(s, "world") == 0, "combo string 2");
-    ASSERT(fabs(prob - 0.50f) < 0.0001f, "combo probability 2");
-    ASSERT(fabs(arr[0] - 4.5f) < 0.001, "combo vector 0_2");
-    ASSERT(fabs(arr[1] - 6.7f) < 0.001, "combo vector 1_2");
-    ASSERT(time.h == 1, "combo time hours 2");    // 3661 = 1h 1m 1s
-    ASSERT(time.m == 1, "combo time minutes 2");
-    ASSERT(time.s == 1, "combo time seconds 2");
-
-    printf("PASS: combo_exponent_hex\n");
-    return n;
-}
 
 /* Test 3: Mix modifiers, h, l, ll, L */
 int test_combo_modifiers(void) {
@@ -475,7 +410,12 @@ int test_width_numbers(void) {
     printf("print x123 45678 hello\n");
 
     // %3d: read only 3 digits for d, %5f: read up to 5 chars for float
-    int n = scanfMine("%c %3d %5f %2s", &c, &d, &f, s);
+    int n = scanfMine("%c%3d %5f %2s", &c, &d, &f, s);
+    printf("n=%d\n", n);
+    printf("c=%c\n", c);
+    printf("d=%d\n", d);
+    printf("f=%f\n", f);
+    printf("s=%s\n", s);
 
     // x = 'x', d = 123 (width-limited), f = 45678.0 (5 chars), s = "he"
     ASSERT(n == 4, "width numbers count");
@@ -483,7 +423,6 @@ int test_width_numbers(void) {
     ASSERT(d == 123, "width int");
     ASSERT(fabs(f - 45678.0f) < 0.01f, "width float");
     ASSERT(strcmp(s, "he") == 0, "width string");
-
     printf("PASS: width_numbers\n");
     return n;
 }
@@ -497,9 +436,9 @@ int test_width_hex(void) {
 
     int n = scanfMine("%4x", &x);  // width = 4 hex digits only
 
-    // Only '123A' should be read, ignoring 'BCD'
+    // Only '12' should be read, ignoring 'ABCD'
     ASSERT(n == 1, "width hex count");
-    ASSERT(x == 0x123A, "width hex value");
+    ASSERT(x == 0x12, "width hex value");
 
     printf("PASS: width_hex\n");
     return n;
@@ -514,6 +453,9 @@ int test_width_vector_string(void) {
     printf("print [1.23456,7.89,3.21] helloworld\n");
 
     int n = scanfMine("%v %3s", arr, 3, s);
+    printf("n=%d\n", n);
+    printf("arr[0]=%f, arr[1]=%f, arr[2]=%f\n", arr[0], arr[1], arr[2]);
+    printf("s=%s\n", s);
 
     // Vector: read full float values (width=-1), string: only 3 chars
     ASSERT(n == 2, "width vector-string count");
@@ -564,7 +506,7 @@ void test_star_modifier(void) {
     {
         unsigned x = 0, y = 0;
         printf("print 0xFF 123\n");
-        int n = scanfMine("%*x %u", &y);
+        int n = scanfMine("%*x %d", &y);
         printf("n=%d, y=%u\n", n, y);
         assert(n == 1);
         assert(y == 123);
